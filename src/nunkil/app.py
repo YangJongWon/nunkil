@@ -14,6 +14,7 @@ from .providers import (
     ProviderError,
     providers_from_env,
 )
+from .naming import pick_identity, speakable
 from .schemas import ProductLookup, ProductMatch, Region
 
 log = logging.getLogger("nunkil")
@@ -87,7 +88,16 @@ def create_app(
             raise HTTPException(status_code=502, detail="; ".join(errors))
 
         matches.sort(key=lambda m: (m.price is None, m.price or 0))
-        return ProductLookup(query=jan or q or "", region=region, matches=matches[:limit])
+        identity = pick_identity(matches)
+        priced = [m for m in matches if m.price is not None]
+        return ProductLookup(
+            query=jan or q or "",
+            region=region,
+            identity=identity,
+            cheapest=priced[0] if priced else None,
+            spoken_name=speakable(identity.name) if identity else None,
+            matches=matches[:limit],
+        )
 
     @app.exception_handler(MissingCredentials)
     async def missing_credentials(_request, exc: MissingCredentials):

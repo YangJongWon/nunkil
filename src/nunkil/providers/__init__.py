@@ -28,8 +28,9 @@ def providers_from_env(client: httpx.AsyncClient) -> dict[Region, list[ProductPr
     """Builds whatever the environment has keys for. Order matters: the first
     provider that can answer a JAN is the fast path."""
     jp: list[ProductProvider] = []
-    if app_id := os.environ.get("YAHOO_APP_ID"):
-        jp.append(YahooShopping(app_id, client))
+    # Yahoo calls it "Client ID（アプリケーションID）"; it goes in the appid parameter.
+    if client_id := os.environ.get("YAHOO_CLIENT_ID"):
+        jp.append(YahooShopping(client_id, client))
     if (rakuten_id := os.environ.get("RAKUTEN_APP_ID")) and (
         access_key := os.environ.get("RAKUTEN_ACCESS_KEY")
     ):
@@ -45,6 +46,6 @@ def providers_from_env(client: httpx.AsyncClient) -> dict[Region, list[ProductPr
 
 
 REQUIRED_ENV: dict[Region, str] = {
-    "jp": "YAHOO_APP_ID (또는 RAKUTEN_APP_ID + RAKUTEN_ACCESS_KEY)",
+    "jp": "YAHOO_CLIENT_ID (또는 RAKUTEN_APP_ID + RAKUTEN_ACCESS_KEY)",
     "kr": "NAVER_CLIENT_ID + NAVER_CLIENT_SECRET",
 }

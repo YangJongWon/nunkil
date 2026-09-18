@@ -19,13 +19,16 @@ class ProductMatch(BaseModel):
 
 
 class ProductLookup(BaseModel):
-    """What the app needs to speak a single short sentence."""
+    """What the app needs to speak a single short sentence.
+
+    `identity` answers "what is this?" and `cheapest` answers "what does it cost?".
+    They are usually different listings: bundles are cheap per unit but their
+    titles are unreadable.
+    """
 
     query: str
     region: Region
+    identity: ProductMatch | None = None
+    cheapest: ProductMatch | None = None
+    spoken_name: str | None = Field(default=None, description="식별 이름을 소리내어 읽기 좋게 다듬은 것")
     matches: list[ProductMatch]
-
-    @property
-    def cheapest(self) -> ProductMatch | None:
-        priced = [m for m in self.matches if m.price is not None]
-        return min(priced, key=lambda m: m.price or 0) if priced else None

@@ -33,13 +33,14 @@ iPhone 앱 (ios/)  ──BLE/Wi-Fi──  Ray-Ban Meta
 ```sh
 uv sync
 uv run pytest                       # API 키 없이 전부 통과한다
-NUNKIL_TOKEN=$(openssl rand -hex 24) YAHOO_APP_ID=... uv run nunkil
+set -a; source .env; set +a          # .env 는 gitignore 된다
+uv run nunkil
 ```
 
 | 환경변수 | 쓰임 |
 |---|---|
 | `NUNKIL_TOKEN` | 앱과 공유하는 접근 토큰. 없으면 서버가 뜨지 않는다 |
-| `YAHOO_APP_ID` | 일본. **JAN 바코드를 직접 조회할 수 있는 유일한 공급자** |
+| `YAHOO_CLIENT_ID` | 일본. Yahoo!デベロッパー의 Client ID(アプリケーションID). **JAN 바코드를 직접 조회할 수 있는 유일한 공급자** |
 | `RAKUTEN_APP_ID`, `RAKUTEN_ACCESS_KEY` | 일본, 가격 비교용 보조 |
 | `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET` | 한국 |
 
