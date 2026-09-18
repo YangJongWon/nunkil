@@ -16,3 +16,4 @@ ios/*.xcodeproj
 xcuserdata/
 DerivedData/
 .DS_Store
+*.log
