@@ -54,6 +54,14 @@ uv run nunkil
 - 앱의 온디바이스 판정(흐림·바코드·접근 감지)은 순수 함수라 합성 이미지로 테스트한다.
 - 안경 연결이 필요한 흐름은 Meta의 MockDeviceKit에 합성 HEVC 영상을 넣어 시뮬레이터에서 돌린다.
 
+```sh
+cd ios && xcodegen
+xcodebuild -project NunKil.xcodeproj -scheme NunKil \
+  -destination 'platform=iOS Simulator,name=iPhone 17' test
+```
+
+**Vision의 바코드 디코딩은 시뮬레이터에서 동작하지 않는다**("Could not create inference context"). 해당 테스트는 시뮬레이터에서 건너뛰므로, 바코드 인식을 고쳤다면 실기기에서 한 번 더 돌려야 한다.
+
 ## 라이선스
 
 Apache License 2.0. [LICENSE](LICENSE) 참고.
