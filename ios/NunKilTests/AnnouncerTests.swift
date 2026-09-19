@@ -37,6 +37,21 @@ final class AnnouncerTests: XCTestCase {
     XCTAssertTrue(announcer.say("근처에 편의점이 있어요", priority: .info))
   }
 
+  /// Regression: nothing cleared the active priority, so after the first sentence
+  /// every lower-priority message was dropped and the app fell silent for good.
+  func testSpeakerGoingIdleUnblocksLowerPriorityMessages() {
+    let speaker = GlassesSpeaker()
+    let announcer = Announcer(speaker: speaker, now: { self.clock })
+
+    XCTAssertTrue(announcer.say("상품을 하나씩 들어 보여 주세요.", priority: .answer))
+    XCTAssertFalse(announcer.say(ProductSpeech.holdCloser, priority: .info))
+
+    speaker.onIdle?()  // speech finished
+
+    clock += 1
+    XCTAssertTrue(announcer.say(ProductSpeech.holdCloser, priority: .info))
+  }
+
   func testEmptyTextSaysNothing() {
     let announcer = makeAnnouncer()
     XCTAssertFalse(announcer.say("   "))

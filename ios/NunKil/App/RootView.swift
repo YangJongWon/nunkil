@@ -59,18 +59,12 @@ private struct ShoppingView: View {
 
   private var status: String {
     switch viewModel.phase {
-    case .idle: return viewModel.camera.hasActiveDevice ? "준비됨" : "안경을 켜고 착용해 주세요"
-    case .connecting: return "안경 카메라를 켜는 중"
-    case .looking: return "찾는 중"
-    case .spoke(let sentence): return sentence
+    case .idle:
+      if !viewModel.lastAnswer.isEmpty { return viewModel.lastAnswer }
+      return viewModel.camera.hasActiveDevice ? "준비됨" : "안경을 켜고 착용해 주세요"
+    case .starting: return "안경 카메라를 켜는 중"
+    case .scanning: return viewModel.lastAnswer.isEmpty ? "상품을 들어 보여 주세요" : viewModel.lastAnswer
     case .failed(let message): return message
-    }
-  }
-
-  private var isBusy: Bool {
-    switch viewModel.phase {
-    case .idle, .spoke, .failed: return false
-    case .connecting, .looking: return true
     }
   }
 
@@ -82,24 +76,31 @@ private struct ShoppingView: View {
         .frame(maxWidth: .infinity, minHeight: 88)
         .accessibilityAddTraits(.updatesFrequently)
 
-      Button { Task { await viewModel.identifyProduct() } } label: {
-        Label("이게 뭐야", systemImage: "barcode.viewfinder")
-          .font(.title2)
-          .frame(maxWidth: .infinity, minHeight: 72)
+      // One control. Starting and stopping is the whole interaction: while it runs,
+      // products are announced as they come into view without touching the phone.
+      Button { Task { await viewModel.toggleScanning() } } label: {
+        Label(
+          viewModel.isScanning ? "상품 확인 중지" : "상품 확인 시작",
+          systemImage: viewModel.isScanning ? "stop.circle" : "barcode.viewfinder"
+        )
+        .font(.title2)
+        .frame(maxWidth: .infinity, minHeight: 96)
       }
       .buttonStyle(.borderedProminent)
-      .disabled(isBusy || !viewModel.camera.hasActiveDevice)
+      .tint(viewModel.isScanning ? .red : .accentColor)
+      .disabled(!viewModel.isScanning && !viewModel.camera.hasActiveDevice)
+      .accessibilityHint("시작하면 상품을 하나씩 들어 보여 주세요. 바코드가 보이면 이름과 최저가를 말합니다.")
 
-      Button { Task { await viewModel.comparePrice() } } label: {
-        Label("가격 비교", systemImage: "tag")
-          .font(.title2)
-          .frame(maxWidth: .infinity, minHeight: 72)
-      }
-      .buttonStyle(.bordered)
-      .disabled(isBusy || !viewModel.camera.hasActiveDevice)
-
-      if !isBusy, case .idle = viewModel.phase {} else {
-        Button("처음으로") { viewModel.reset() }
+      if viewModel.isScanning {
+        // Tells apart "no frames arriving" from "frames arrive, no barcode in them".
+        VStack(spacing: 2) {
+          Text(viewModel.diagnostics.summary).monospacedDigit()
+          if !viewModel.diagnostics.lastEvent.isEmpty {
+            Text(viewModel.diagnostics.lastEvent).lineLimit(1)
+          }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
       }
 
       Picker("지역", selection: $viewModel.region) {
@@ -110,7 +111,7 @@ private struct ShoppingView: View {
       .accessibilityHint("어느 나라 가격으로 비교할지 고릅니다.")
 
       Spacer()
-      Text("동작 버튼이나 Siri로도 부를 수 있어요: \"NunKil 이게 뭐야\"")
+      Text("동작 버튼이나 Siri로 시작·중지할 수 있어요: \"NunKil 이게 뭐야\"")
         .font(.footnote)
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)

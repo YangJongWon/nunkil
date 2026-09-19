@@ -4,7 +4,11 @@ import Foundation
 /// word costs the wearer time while standing in a shop aisle.
 enum ProductSpeech {
   static let notFound = "무슨 상품인지 못 찾았어요."
-  static let noBarcode = "바코드를 못 찾았어요. 포장을 카메라 쪽으로 돌려 주세요."
+  static let scanStarted = "상품을 하나씩 들어 보여 주세요."
+  static let scanStopped = "상품 확인을 멈췄어요."
+  static let scanTimedOut = "상품 확인을 끝냈어요."
+  static let holdCloser = "바코드가 안 보여요. 포장을 카메라 쪽으로 천천히 돌려 주세요."
+  static let cameraStopped = "안경 카메라가 꺼져서 멈췄어요."
 
   /// "堅あげポテト うすしお. 온라인 최저 500엔."
   static func describe(_ lookup: ProductLookup) -> String {

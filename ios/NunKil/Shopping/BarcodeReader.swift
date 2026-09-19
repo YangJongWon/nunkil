@@ -14,7 +14,17 @@ enum BarcodeReader {
   }
 
   /// Returns the most prominent retail barcode in the image, if any.
+  ///
+  /// A barcode held at arm's length covers a small part of the glasses' wide frame,
+  /// and a single pass over the whole image often misses it. So the centre is
+  /// retried on its own, where the bars are effectively twice as wide.
   static func read(_ image: CGImage) -> Barcode? {
+    if let found = scan(image) { return found }
+    guard let centre = centreCrop(image, fraction: 0.5) else { return nil }
+    return scan(centre)
+  }
+
+  private static func scan(_ image: CGImage) -> Barcode? {
     let request = VNDetectBarcodesRequest()
     request.symbologies = retailSymbologies
     do {
@@ -30,6 +40,15 @@ enum BarcodeReader {
     // Several barcodes can be in frame (the shelf label next to the product);
     // the biggest one is the thing being held up to the camera.
     return candidates.max { a, b in area(of: a, in: request) < area(of: b, in: request) }
+  }
+
+  static func centreCrop(_ image: CGImage, fraction: CGFloat) -> CGImage? {
+    let width = CGFloat(image.width) * fraction
+    let height = CGFloat(image.height) * fraction
+    let rect = CGRect(
+      x: (CGFloat(image.width) - width) / 2, y: (CGFloat(image.height) - height) / 2,
+      width: width, height: height)
+    return image.cropping(to: rect)
   }
 
   /// Retail barcodes are 8, 12 or 13 digits and carry a check digit. Validating it

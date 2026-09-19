@@ -32,6 +32,11 @@ final class Announcer {
   init(speaker: GlassesSpeaker, now: @escaping () -> Date = Date.init) {
     self.speaker = speaker
     self.now = now
+    // Without this the first sentence blocks every lower-priority message for the
+    // rest of the session — the app goes silent and looks broken.
+    speaker.onIdle = { [weak self] in
+      MainActor.assumeIsolated { self?.speakingUntilPriority = nil }
+    }
   }
 
   /// Returns whether the message was actually spoken.

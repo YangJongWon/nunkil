@@ -20,8 +20,7 @@ struct NunKilApp: App {
       announcer: Announcer(speaker: GlassesSpeaker()))
     _connection = State(wrappedValue: GlassesConnection(wearables: wearables))
     _shopping = State(wrappedValue: shopping)
-    ShoppingAutomation.identify = { await shopping.identifyProduct() }
-    ShoppingAutomation.comparePrice = { await shopping.comparePrice() }
+    ShoppingAutomation.toggleScanning = { await shopping.toggleScanning() }
   }
 
   var body: some Scene {
