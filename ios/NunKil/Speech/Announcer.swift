@@ -58,8 +58,10 @@ final class Announcer {
     recent[trimmed] = now()
     speakingUntilPriority = priority
     lastSpoken = trimmed
-    // Mixed Korean/Japanese sentences need one voice per script.
-    speaker.say(SpeechSegmenter.segments(trimmed))
+    // Mixed Korean/Japanese sentences need one voice per script. Hazards go out
+    // faster so the warning lands before the vehicle does.
+    let rate = priority == .hazard ? GlassesSpeaker.hazardRate : GlassesSpeaker.answerRate
+    speaker.say(SpeechSegmenter.segments(trimmed), rate: rate)
     return true
   }
 

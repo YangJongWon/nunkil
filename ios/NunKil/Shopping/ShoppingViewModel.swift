@@ -83,9 +83,9 @@ final class ShoppingViewModel {
     announced.removeAll()
     lastFoundAt = nil
     startedAt = now()
-    diagnostics.startSession("preset=inspect region=\(region.rawValue)")
+    diagnostics.startSession("preset=shopping region=\(region.rawValue)")
     do {
-      try await camera.start(.inspect)
+      try await camera.start(.shopping)
       diagnostics.record("stream started: \(String(describing: camera.streamState))")
     } catch {
       diagnostics.record("start failed: \(error.localizedDescription)")
@@ -98,7 +98,7 @@ final class ShoppingViewModel {
     phase = .scanning
     announcer.say(ProductSpeech.scanStarted, priority: .answer)
 
-    log.notice("scan started: preset=inspect region=\(self.region.rawValue, privacy: .public)")
+    log.notice("scan started: preset=shopping region=\(self.region.rawValue, privacy: .public)")
     let scanning = OSAllocatedUnfairLock(initialState: false)
     camera.setFrameHandler { [weak self] image in
       Task { @MainActor in self?.diagnostics.countFrame() }
@@ -109,6 +109,15 @@ final class ShoppingViewModel {
         })
       else { return }
       Task.detached(priority: .userInitiated) {
+        // Blurry or near-black frames never decode: skip Vision work so the
+        // 1–2s answer budget is spent on readable frames only.
+        if FrameGate.sharpness(cgImage) < FrameGate.minSharpness
+          || FrameGate.brightness(cgImage) < FrameGate.minBrightness
+        {
+          scanning.withLock { $0 = false }
+          await self?.diagnostics.countScan(found: nil)
+          return
+        }
         let found = BarcodeReader.read(cgImage)
         scanning.withLock { $0 = false }
         await self?.diagnostics.countScan(found: found?.payload)

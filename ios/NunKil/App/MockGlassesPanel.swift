@@ -4,6 +4,7 @@ import GlassesKit
 import MWDATMockDevice
 import PhotosUI
 import SwiftUI
+import UIKit
 
 /// Simulated Ray-Ban Meta for developing without the real glasses. Pick a photo of
 /// a barcode and it becomes what `capturePhoto()` returns.
@@ -38,7 +39,7 @@ struct MockGlassesPanel: View {
             PhotosPicker("촬영될 사진 고르기 (바코드)", selection: $photoItem, matching: .images)
               .disabled(glasses == nil)
           } footer: {
-            Text("'이게 뭐야'를 누르면 이 사진이 안경 사진으로 전달됩니다.")
+            Text("'이게 뭐야'를 누르면 이 사진이 안경 사진과 미리보기 영상으로 전달됩니다.")
           }
           if !status.isEmpty {
             Section { Text(status).font(.footnote) }
@@ -87,7 +88,19 @@ struct MockGlassesPanel: View {
       let url = FileManager.default.temporaryDirectory.appendingPathComponent("mock-capture.jpg")
       try data.write(to: url, options: .atomic)
       glasses.services.camera.setCapturedImage(fileURL: url)
-      status = "촬영 사진으로 설정했어요."
+      // The stream feed is what the scanning loop reads: rebuild it from the
+      // same photo so the barcode is found in the simulator without hardware.
+      if let photo = UIImage(data: data) {
+        do {
+          let feed = try await Task.detached(priority: .userInitiated) { try MockFeedVideo.make(from: photo) }.value
+          glasses.services.camera.setCameraFeed(fileURL: feed)
+          status = "촬영 사진으로 설정했어요. 미리보기 영상도 같은 사진으로 바꿨어요."
+        } catch {
+          status = "촬영 사진은 설정했지만 미리보기 영상 교체 실패: \(error.localizedDescription)"
+        }
+      } else {
+        status = "촬영 사진으로 설정했어요."
+      }
     } catch {
       status = "사진 설정 실패: \(error.localizedDescription)"
     }
